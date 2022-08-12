@@ -254,4 +254,49 @@ A continuación se explicara brevemente como el usuario puede hacer uso de cada 
               "total_saving": 1500.0
              }
     
+    
+    ENDPINTS CON LOS QUE CUENTA LA API
+    	admin/
+		auth/signup/
+		auth/email-verify/ [name='email-verify']
+		auth/login/
+		auth/request-reset-email/ [name='request-reset-email']
+		auth/password-reset/<uidb64>/<token>/ [name='password-reset-confirm']
+		auth/password-reset-complete/ [name='password-reset-complete']
+		auth/password-change-confirm/ [name='password-change-confirm']
+		auth/logout/
+		accounts/register/
+		accounts/list/
+		accounts/list/<id>/
+		accounts/update/<id>/
+		accounts/delete/<id>/
+		labels/register/
+		labels/list/
+		labels/list/filter/
+		labels/update/<int:id>/
+		labels/delete/<int:id>/
+		expenses/register/
+		expenses/list/
+		expenses/list/filter/
+		expenses/update/<id>/
+		expenses/delete/<id>/
+		incomes/register/
+		incomes/list/
+		incomes/list/filter/
+		incomes/update/<int:id>/
+		incomes/delete/<int:id>/
+		goals/register/
+		goals/list/
+		goals/update/<id>/
+		goals/delete/<id>/
+		savings/register/
+		savings/list/
+		savings/list/filter/
+		savings/update/<int:id>/
+		savings/delete/<int:id>/
+		balance/list/filter/
+		profiles/register/
+		profile/list/
+		profiles/update/<int:id>/
+		profiles/delete/<int:id>/
    
