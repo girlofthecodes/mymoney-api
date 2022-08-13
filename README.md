@@ -1,4 +1,4 @@
-# API creada con con Django Rest Framework
+# API creada con Django Rest Framework
 Esta API fue desarrollada para que el usuario pueda llevar un control mas exacto de sus finanzas, donde podra realizar sus 
 cuentas, etiquetas, gastos, ingresos, metas, ahorros y un balance general, pero el usuario debe tener en cuenta que para 
 poder hacer uso de estos recursos mencionados, debera registrarse en la aplicación, algunas otras funcionalidades que tiene 
