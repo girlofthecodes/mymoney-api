@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 
-from users.serializers import UserSignUpSerializer, UserLoginSerializer, SetNewPasswordSerializer, ResetPasswordEmailRequestSerializer, ChangeNewPasswordSerializer, UserLogoutSerializer
+from users.serializers import UserSignUpSerializer, UserLoginSerializer, SetNewPasswordSerializer, ResetPasswordEmailRequestSerializer, ValidateCurrentPasswordASerializer, ChangeNewPasswordSerializer, UserLogoutSerializer
 from users.models import User
 from .utils import Util
 import jwt
@@ -38,22 +38,28 @@ class UserSignUpView(APIView):
             serializer = UserSignUpSerializer(data = request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save() 
-            
             user_data = serializer.data
-            
             user = User.objects.get(email=user_data['email'])
             token = RefreshToken.for_user(user).access_token
-
             current_site = get_current_site(request).domain
             relativeLink = reverse('email-verify')
             absurl = 'http://' + current_site + relativeLink + '?token=' + str(token)
             email_body = '¡Hola '+ user.username +'!\nUsa el siguiente link para verificar tu correo electrónico: \n' + absurl
-            data = {'email_body': email_body, 'to_email': user.email, 'email_subject': 'Verificación de email.'}
-
-            Util.send_email(data)
-
+            data = {
+                'email_body': email_body, 
+                'to_email': user.email, 
+                'email_subject': 'Verificación de email.'
+            }
+            
+            if Util.send_email(data):
+                print("Se envio el correo")
+            else: 
+                print("No se envio el correo") 
+            
+            
             return Response(user_data, status=status.HTTP_201_CREATED)
-        except:
+        except Exception as e :
+            print(f"Ocurrió un error: {e}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 #Verificación de registro mediante un email
@@ -106,7 +112,7 @@ class UserLoginView(APIView):
             return Response(data, status=status.HTTP_200_OK)  
         
         user = User.objects.get(email=email)
-      
+        
         if not user.is_verified: 
                 raise AuthenticationFailed({'msg':'Tu cuenta no ha sido activada, verifica tu email.'})
 
@@ -120,8 +126,19 @@ class UserLoginView(APIView):
             user.is_active = False
             user.save()
             raise AuthenticationFailed({'msg':'La cuenta se ha bloqueado. Resetea tu contraseña.'})
-            
-     
+
+
+class UserDataView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user 
+        return Response({
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+        }, status=status.HTTP_200_OK)
+
 class RequestPasswordResetEmail(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = ResetPasswordEmailRequestSerializer
@@ -133,14 +150,16 @@ class RequestPasswordResetEmail(generics.GenericAPIView):
             user = User.objects.get(email=email)
             uidb64 = urlsafe_base64_encode(smart_bytes(user.id))
             token = PasswordResetTokenGenerator().make_token(user)
-            current_site = get_current_site(request=request).domain
+            current_site = 'localhost:5173'
+            #current_site = get_current_site(request=request).domain
             relativeLink = reverse('password-reset-confirm', kwargs={'uidb64': uidb64, 'token': token})
 
             absurl = 'http://'+current_site + relativeLink
             email_body = '¡Hola '+ user.username +'!\nUsa el enlace a continuación para restablecer tu contraseña:\n' +absurl
             data = {'email_body': email_body, 'to_email': user.email,'email_subject': 'Restablece tu contraseña'}
             Util.send_email(data)
-        return Response({'msg': 'Te hemos enviado un enlace para restablecer tu contraseña.'}, status=status.HTTP_200_OK)
+            print("Se envio el email")
+        return Response({'success': 'Te hemos enviado un enlace para restablecer tu contraseña.'}, status=status.HTTP_200_OK)
 
 
 class PasswordTokenCheckAPI(generics.GenericAPIView):
@@ -155,9 +174,12 @@ class PasswordTokenCheckAPI(generics.GenericAPIView):
                 return Response({'msg': 'El token no es válido, solicita uno nuevo.'}, status=status.HTTP_401_UNAUTHORIZED)
 
             return  Response({'msg':'Credenciales válidas', 'uidb64':uidb64, 'token':token}, status=status.HTTP_200_OK)
-        except DjangoUnicodeDecodeError: 
-            if not PasswordResetTokenGenerator().check_token(user): 
-                return Response({'msg':'El token no es válido, solicita uno nuevo.'}, status=status.HTTP_401_UNAUTHORIZED)
+        except DjangoUnicodeDecodeError:
+            return Response({'msg': 'El ID de usuario no es válido.'}, status=status.HTTP_400_BAD_REQUEST)
+        except User.DoesNotExist:
+            return Response({'msg': 'El usuario no existe.'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'msg': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class SetNewPasswordAPIView(generics.GenericAPIView):
@@ -165,10 +187,19 @@ class SetNewPasswordAPIView(generics.GenericAPIView):
     serializer_class = SetNewPasswordSerializer
 
     def patch(self, request):
-        serializer = self.serializer_class(data=request.data)
+        serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         return Response({'msg': 'Restablecimiento de contraseña exitoso.'}, status=status.HTTP_200_OK)
 
+#Validacion de la contraseña para permitir su cambio 
+class ValidateCurrentPasswordAPIView(generics.GenericAPIView): 
+    serializer_class = ValidateCurrentPasswordASerializer
+    permission_classes=[IsAuthenticated, ]
+    
+    def post(self, request): 
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response({'msg': 'Contraseña actual válida. Ahora puedes cambiar tu contraseña.'}, status=status.HTTP_200_OK)
 
 #Cambio de contraseña
 class ChangeNewPasswordAPIView(generics.GenericAPIView):
@@ -178,7 +209,7 @@ class ChangeNewPasswordAPIView(generics.GenericAPIView):
     def patch(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        request.user.set_password(serializer.validated_data['new_password'])
+        request.user.set_password(serializer.validated_data['newPassword'])
         request.user.save()
         data = {
             'msg':'Cambio de contraseña exitoso.'

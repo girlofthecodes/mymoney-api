@@ -7,8 +7,8 @@ from django.contrib.auth.models import PermissionsMixin
 class UserManager(BaseUserManager):
     def create_user(self, username, email, password=None): 
         if not username: 
-           raise TypeError("Ingresa un nombre de usuario válido")
-      
+            raise TypeError("Ingresa un nombre de usuario válido")
+
         if not email:
             raise TypeError("Enter a valid email address.")
         if not password:

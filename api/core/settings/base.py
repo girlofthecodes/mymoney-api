@@ -10,6 +10,7 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 from pathlib import Path
 from decouple import config, Csv
 from datetime import timedelta
+import os 
 #import cloudinary 
 
 ENV = config('ENV', default='dev')
@@ -26,17 +27,26 @@ SECRET_KEY = config('DJANGO_SECRET_KEY', default='change_this_in_production!')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', cast=Csv(), default='*')
+ALLOWED_HOSTS = config('DJANGO_ALLOWED_HOSTS', cast=Csv(), default='127.0.0.1,localhost')
 
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
 
-CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', cast=Csv(), default='')
+CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)  # Debe ser False
+
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', cast=Csv(), default='http://localhost:5173,http://localhost:8000')
 
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', cast=Csv(), default='')
 
 CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
 
-STATIC_ROOT = BASE_DIR / "staticfiles"
+
+#STATIC_ROOT = BASE_DIR / "staticfiles"
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # Carpeta donde se recopilan los archivos estáticos
+STATICFILES_DIRS = [
+    BASE_DIR / 'core/static',  # Esta carpeta debe existir y contener tus archivos estáticos
+]
+
+
 
 # Application definition
 INSTALLED_APPS = [
@@ -127,6 +137,7 @@ PG_PASSWD = config('POSTGRES_PASSWORD', default='')
 PG_HOST = config('POSTGRES_HOST', default='127.0.0.1')
 PG_PORT = config('POSTGRES_PORT', cast=int, default=5432)
 
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -142,9 +153,9 @@ DATABASES = {
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
+    # {
+    #     'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    # },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
     },
@@ -170,24 +181,26 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/
 
-STATIC_URL = '/static/'
+#STATIC_URL = '/static/'
 
 '''
 cloudinary.config( 
-  cloud_name = config('CLOUDINARY_CLOUD_NAME', default=''), 
-  api_key = config('CLOUDINARY_API_KEY',default=''), 
-  api_secret = config('CLOUDINARY_API_SECRET',default='') 
+    cloud_name = config('CLOUDINARY_CLOUD_NAME', default=''), 
+    api_key = config('CLOUDINARY_API_KEY',default=''), 
+    api_secret = config('CLOUDINARY_API_SECRET',default='') 
 )
 '''
 
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
-STATIC_ROOT = BASE_DIR / "staticfiles"
+#STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Simplified static file serving for Python web apps
 # https://whitenoise.evans.io/en/stable/
@@ -222,8 +235,8 @@ REST_FRAMEWORK = {
 AUTH_USER_MODEL = 'users.User' #Se utiliza el modelo para el proceso de autenticacion
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
-    'REFRESH_TOKEN_LIFETIME': timedelta(minutes=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=120),
+    'REFRESH_TOKEN_LIFETIME': timedelta(minutes=120),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
     'UPDATE_LAST_LOGIN': False,

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido a nuestra plataforma</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #4CAF50;
+        }
+        .footer {
+            font-size: 12px;
+            color: #777;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>¡Bienvenido a nuestra plataforma, {{ user.username }}!</h1>
+        <p>Gracias por registrarte. Estamos muy contentos de tenerte con nosotros.</p>
+        <p>Haz clic en el siguiente enlace para activar tu cuenta:</p>
+        <a href="{{ activation_link }}">Activar cuenta</a>
+        <div class="footer">
+            <p>Si no solicitaste este correo, por favor ignóralo.</p>
+        </div>
+    </div>
+</body>
+</html>

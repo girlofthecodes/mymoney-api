@@ -23,6 +23,7 @@ class UserSignUpSerializer(serializers.ModelSerializer):
         required=True, 
         validators = [UniqueValidator(queryset=User.objects.all(), message={'msg':'Este email ya existe. Introduzca un email distinto.'})]
     )
+    
     class Meta:
         model = User
         fields = [
@@ -45,43 +46,44 @@ class UserSignUpSerializer(serializers.ModelSerializer):
     def validate(self, data):
         username = data.get('username')
         password = data.get('password')
-        special_characters = "[~\!@#\$%\^&\*\(\)_\+{}\":;'\[\]-./=¿?<>]"
+        special_characters = "[~!@#$%^&*()_+{}\":;'[]-./=¿?<>]"
+
 
         if len(username) < 6: 
-            raise ValidationError({"msg":"El nombre de usuario debe tener un mínimo de 6 caracteres."})
+            raise ValidationError({"username":"El nombre de usuario debe tener un mínimo de 6 caracteres."})
 
         if len(username) > 20: 
-            raise ValidationError({'msg':'El nombre de usuario debe tener un máximo de 20 caracteres.'})
+            raise ValidationError({'username':'El nombre de usuario debe tener un máximo de 20 caracteres.'})
 
         if any(i.isspace() for i in username):
-            raise ValidationError({'msg':'El nombre de usuario no admite espacios.'})
+            raise ValidationError({'username':'El nombre de usuario no admite espacios.'})
 
         if any(i in special_characters for i in username): 
-           raise ValidationError({'msg':'El nombre de usuario no admite caracteres especiales.'})
+            raise ValidationError({'username':'El nombre de usuario no admite caracteres especiales.'})
 
         if any(i.isspace() for i in username):
-            raise ValidationError('El nombre de usuario no admite espacios.')
+            raise ValidationError({'username':'El nombre de usuario no admite espacios.'})
 
         if not any(i.isalpha() for i in password):
-            raise ValidationError({'msg':'La contraseña debe incluir al menos una letra.'})
+            raise ValidationError({'password':'La contraseña debe incluir al menos una letra.'})
         
         if not any(i.isupper() for i in password):
-            raise ValidationError({'msg':'La contraseña debe incluir al menos una letra mayúscula.'})
+            raise ValidationError({'password':'La contraseña debe incluir al menos una letra mayúscula.'})
         
         if not any(i.isdigit() for i in password):
-            raise ValidationError({'msg':'La contraseña debe incluir al menos un dígito.'})
+            raise ValidationError({'password':'La contraseña debe incluir al menos un dígito.'})
         
         if not any(i in special_characters for i in password): 
-            raise ValidationError({'msg':'La contraseña debe incluir al menos un caracter especial.'})
+            raise ValidationError({'password':'La contraseña debe incluir al menos un caracter especial.'})
 
         if any(i.isspace() for i in password): 
-            raise ValidationError({'msg':'La contraseña no debe incluir espacios.'})
+            raise ValidationError({'password':'La contraseña no debe incluir espacios.'})
 
         if len(password) > 20:
-            raise ValidationError({'msg':'La contraseña debe tener un máximo 20 caracteres.'})
+            raise ValidationError({'password':'La contraseña debe tener un máximo 20 caracteres.'})
         
         if len(password) < 6:
-            raise ValidationError({'msg':'La contraseña debe tener un mínimo de 6 caracteres.'})
+            raise ValidationError({'password':'La contraseña debe tener un mínimo de 6 caracteres.'})
         
         return super(UserSignUpSerializer, self).validate(data)
 
@@ -113,18 +115,20 @@ class ResetPasswordEmailRequestSerializer(serializers.Serializer):
 
     class Meta:
         fields = ['email']
- 
+
 class SetNewPasswordSerializer(serializers.Serializer):
-    password = serializers.CharField(min_length=6, max_length=20, write_only=True)
+    newPassword = serializers.CharField(min_length=6, max_length=20, write_only=True)  
+    confirmPassword = serializers.CharField(min_length=6, max_length=20, write_only=True)
     token = serializers.CharField(min_length=1, write_only=True) #Token para comprobar que la contraseña es correcta
     uidb64 = serializers.CharField(min_length=1, write_only=True) #El id del usuario codificado en base 64
 
     class Meta:
-        fields = ['password', 'token', 'uidb64']
+        fields = ['newPassword', 'confirmPassword', 'token', 'uidb64']
 
     def validate(self, attrs):
         try:
-            password = attrs.get('password')
+            newPassword = attrs.get('newPassword')
+            confirmPassword = attrs.get('confirmPassword')
             token = attrs.get('token')
             uidb64 = attrs.get('uidb64')
 
@@ -132,66 +136,115 @@ class SetNewPasswordSerializer(serializers.Serializer):
             user = User.objects.get(id=id)
 
             if not PasswordResetTokenGenerator().check_token(user, token):
-                raise AuthenticationFailed('El enlace de reinicio no es válido.')
+                raise AuthenticationFailed('El enlace de reinicio no es válido!!.')
 
-            user.set_password(password)
+            special_characters = "[~!@#$%^&*()_+{}\":;'[]-./=¿?<>]"
+
+            if not any(i.isalpha() for i in newPassword):
+                raise ValidationError({'newPassword': 'La contraseña debe contener al menos una letra.'})
+
+            if not any(i.isupper() for i in newPassword):
+                raise ValidationError({'newPassword': 'La contraseña debe incluir al menos una letra mayúscula'})
+
+            if not any(i.isdigit() for i in newPassword):
+                raise ValidationError({'newPassword': 'La contraseña debe incluir al menos un dígito'})
+
+            if not any(i in special_characters for i in newPassword):
+                raise ValidationError({'newPassword': 'La contraseña debe incluir al menos un caracter especial'})
+
+            if any(i.isspace() for i in newPassword):
+                raise ValidationError({'newPassword': 'La contraseña no debe incluir espacios'})
+
+            if len(newPassword) > 20:
+                raise ValidationError({'newPassword': 'La contraseña debe tener un máximo 20 caracteres'})
+
+            if len(newPassword) < 6:
+                raise ValidationError({'newPassword': 'La contraseña debe tener un mínimo de 6 caracteres'})
+
+            if newPassword != confirmPassword:
+                raise ValidationError({'confirmPassword': "Las contraseñas no coinciden."})
+
+            if user.check_password(newPassword):  
+                raise ValidationError({'newPassword': 'La nueva contraseña no puede ser la misma que la contraseña actual.'})
+
+            password_validation.validate_password(newPassword, user)
+        
+            user.set_password(newPassword)
             user.is_active = True
             user.save()
-            return (user)
-        except Exception:
-            raise AuthenticationFailed('El enlace de reinicio no es válido.')
+            return user
+        except AuthenticationFailed as e:
+            raise AuthenticationFailed(f"El enlace de reinicio no es válido. Detalles: {str(e)}")
+        except ValidationError as e:
+            raise ValidationError(e.detail)
+        except Exception as e:
+            raise AuthenticationFailed(f"Error desconocido al procesar el enlace de reinicio: {str(e)}")
         
 
 #Cambio de contraseña.
+class ValidateCurrentPasswordASerializer(serializers.Serializer): 
+    current_password = serializers.CharField(min_length=6, max_length=20)
+    
+    class Meta:
+        fields = ['current_password']
+        
+    def validate_current_password(self, value):
+        if not self.context['request'].user.check_password(value):
+            raise ValidationError({'msg': 'La contraseña actual no es correcta.'})
+        return value
+
+
+
 class ChangeNewPasswordSerializer(serializers.Serializer):
-    current_password = serializers.CharField(min_length=6, max_length=20, write_only=True) 
-    new_password = serializers.CharField(min_length=6, max_length=20, write_only=True)  
-    confirm_password = serializers.CharField(min_length=6, max_length=20, write_only=True)
+    currentPassword = serializers.CharField(min_length=6, max_length=20, write_only=True) 
+    newPassword = serializers.CharField(min_length=6, max_length=20, write_only=True)  
+    confirmPassword = serializers.CharField(min_length=6, max_length=20, write_only=True)
     
     class Meta:
         fields = [
-            'current_password',
-            'new_password',
-            'confirm_password'
+            'currentPassword',
+            'newPassword',
+            'confirmPassword'
             ]
 
-    def validate_current_password(self, value):
+    def validate_currentPassword(self, value):
         if not self.context['request'].user.check_password(value):
-            raise AuthenticationFailed({'msg':'La contraseña actual no coincide.'})
+            raise ValidationError({'currentPassword':'La contraseña actual no coincide.'})
         return value
 
     def validate(self, data):
-        special_characters = "[~\!@#\$%\^&\*\(\)_\+{}\":;'\[\]-./=¿?<>]"
+        special_characters = "[~!@#$%^&*()_+{}\":;'[]-./=¿?<>]"
 
-        if not any(i.isalpha() for i in data['new_password']): 
-                raise ValidationError({'msg':'La contraseña debe contener al menos una letra.'})
+        if not any(i.isalpha() for i in data['newPassword']): 
+            raise ValidationError({'newPassword':'La contraseña debe contener al menos una letra.'})
         
-        if not any(i.isupper() for i in data['new_password']):
-            raise ValidationError({'msg':'La contraseña debe incluir al menos una letra mayúscula'})
+        if not any(i.isupper() for i in data['newPassword']):
+            raise ValidationError({'newPassword':'La contraseña debe incluir al menos una letra mayúscula'})
         
-        if not any(i.isdigit() for i in data['new_password']):
-            raise ValidationError({'msg':'La contraseña debe incluir al menos un dígito'})
+        if not any(i.isdigit() for i in data['newPassword']):
+            raise ValidationError({'newPassword':'La contraseña debe incluir al menos un dígito'})
         
-        if not any(i in special_characters for i in data['new_password']): 
-            raise ValidationError({'msg':'La contraseña debe incluir al menos un caracter especial'})
+        if not any(i in special_characters for i in data['newPassword']): 
+            raise ValidationError({'newPassword':'La contraseña debe incluir al menos un caracter especial'})
 
-        if any(i.isspace() for i in data['new_password']): 
-            raise ValidationError({'msg':'La contraseña no debe incluir espacios'})
+        if any(i.isspace() for i in data['newPassword']): 
+            raise ValidationError({'newPassword':'La contraseña no debe incluir espacios'})
 
-        if len(data['new_password']) > 20:
-            raise ValidationError({'msg':'La contraseña debe tener un máximo 20 caracteres'})
+        if len(data['newPassword']) > 20:
+            raise ValidationError({'newPassword':'La contraseña debe tener un máximo 20 caracteres'})
         
-        if len(data['new_password']) < 6:
-            raise ValidationError({'msg':'La contraseña debe tener un mínimo de 6 caracteres'})
+        if len(data['newPassword']) < 6:
+            raise ValidationError({'newPassword':'La contraseña debe tener un mínimo de 6 caracteres'})
 
-        if data['new_password'] != data['confirm_password']:
-            raise AuthenticationFailed({'msg':"Las contraseñas no coinciden."})
+        if data['newPassword'] != data['confirmPassword']:
+            raise ValidationError({'confirmPassword':"Las contraseñas no coinciden."})
 
-        if data['new_password'] == data['current_password']: 
-            raise ValidationError({'msg':'Esta contraseña ya ha sido usada. Prueba una diferente.'})
-        password_validation.validate_password(data['new_password'], self.context['request'].user)
+        if data['newPassword'] == data['currentPassword']: 
+            raise ValidationError({'newPassword':'Esta contraseña ya ha sido usada. Prueba una diferente.'})
+        
+        password_validation.validate_password(data['newPassword'], self.context['request'].user)
         return data
-          
+
 #Logout
 class UserLogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
