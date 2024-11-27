@@ -28,5 +28,5 @@ class Account(models.Model):
     status_delete = models.BooleanField(default=False)
 
 
-    def __str__(self): 
-        return self.user
+    def __str__(self):
+        return f"{self.user.username} - {self.account_name}"

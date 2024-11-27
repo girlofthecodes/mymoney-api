@@ -23,8 +23,6 @@ class AccountRegisterView(APIView):
         }
         return Response(data, status=status.HTTP_201_CREATED)
 
-        
-       
 class AccountsListView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     def get(self, request):
@@ -47,22 +45,18 @@ class AccountIDListView(APIView):
 class AccountUpdateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     def patch(self, request, id):
-        #try: 
-            account = Account.objects.get(user = request.user.id, id=id)
-            serializer = AccountRegisterSerializer(account, data=request.data, partial = True)
-            serializer.is_valid(raise_exception=True)
-            if account.status_delete: 
-                account.status_delete = True
-                return Response({'msg':'Cuenta no encontrada.'}, status=status.HTTP_404_NOT_FOUND)
-            serializer.save() 
-            data = {
-                'data': serializer.data,
-                'msg':'Se actualizó la información de la cuenta.'
-            }
-            return Response(data, status=status.HTTP_200_OK)
-        #except: 
-            return Response({'msg':'No se ha encontrado la cuenta.'}, status=status.HTTP_404_NOT_FOUND)
-        
+        account = Account.objects.get(user = request.user.id, id=id)
+        serializer = AccountRegisterSerializer(account, data=request.data, partial = True)
+        serializer.is_valid(raise_exception=True)
+        if account.status_delete: 
+            account.status_delete = True
+            return Response({'msg':'Cuenta no encontrada.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer.save() 
+        data = {
+            'data': serializer.data,
+            'msg':'Se actualizó la información de la cuenta.'
+        }
+        return Response(data, status=status.HTTP_200_OK)
 
 class AccountDeleteView(APIView): 
     permission_classes = [permissions.IsAuthenticated]
