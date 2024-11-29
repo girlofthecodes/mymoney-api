@@ -9,7 +9,7 @@ class AccountRegisterSerializer(serializers.ModelSerializer):
     accountType = serializers.CharField(source='account_type')  
     accountNumber = serializers.CharField(source='account_number')  
     currentBalance = serializers.DecimalField(source='current_balance', max_digits=10, decimal_places=2)  
-    dueDate = serializers.DateField(source='due_date')  
+    dueDate = serializers.DateField(source='due_date', required=False)  
 
     class Meta:
         model = Account

@@ -32,6 +32,9 @@ class LabelRegisterSerializer(serializers.ModelSerializer):
         ]
 
 class IncomeRegisterSerializer(serializers.ModelSerializer): 
+    incomeDate = serializers.DateField(source='income_date', required=False)  
+    incomeAmount = serializers.DecimalField( source='income_amount', max_digits=10, decimal_places=2) 
+    incomeDescription = serializers.CharField(source='income_description', required=False)
     class Meta: 
         model = Income
         fields = [
@@ -39,12 +42,12 @@ class IncomeRegisterSerializer(serializers.ModelSerializer):
             'user',
             'account',
             'label',
-            'income_date',
-            'income_amount', 
-            'income_description', 
+            'incomeDate',
+            'incomeAmount',
+            'incomeDescription',
         ]
         extra_kwargs = {
-            'income_description': {'required': False}
+            'incomeDescription': {'required': False}
         }
 
     def validate(self, attrs): 
@@ -83,12 +86,16 @@ class IncomeListSerializer(serializers.ModelSerializer):
             'user',  
             'account',
             'label',
-            'income_date',
-            'income_amount', 
-            'income_description', 
+            'incomeDate',
+            'incomeAmount',
+            'incomeDescription'
         ]
 
 class IncomeUpdateSerializer(serializers.ModelSerializer): 
+    incomeDate = serializers.DateField(source='income_date', required=False)  
+    incomeAmount = serializers.DecimalField( source='income_amount', max_digits=10, decimal_places=2) 
+    incomeDescription = serializers.CharField(source='income_description', required=False)
+    
     class Meta: 
         model = Income
         fields = [
@@ -96,8 +103,8 @@ class IncomeUpdateSerializer(serializers.ModelSerializer):
             'user',  
             'account',
             'label',
-            'income_date',
-            'income_amount', 
-            'income_description', 
+            'incomeDate',
+            'incomeAmount',
+            'incomeDescription',
         ]
         read_only_fields = ['account', 'label',]
