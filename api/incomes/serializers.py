@@ -78,6 +78,9 @@ class IncomeListSerializer(serializers.ModelSerializer):
     user = UserSignUpSerializer(read_only=True) 
     account = AccountRegisterSerializer(read_only=True) 
     label = LabelRegisterSerializer(read_only=True)
+    incomeDate = serializers.DateField(source='income_date', read_only=True)  
+    incomeAmount = serializers.DecimalField( source='income_amount', max_digits=10, decimal_places=2, read_only=True) 
+    incomeDescription = serializers.CharField(source='income_description', required=False, read_only=True)
 
     class Meta: 
         model = Income

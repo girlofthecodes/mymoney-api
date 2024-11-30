@@ -24,7 +24,6 @@ class AccountRegisterSerializer(serializers.ModelSerializer):
             'id', 
             'account_name',
         ]
-   
 
 class LabelRegisterSerializer(serializers.ModelSerializer):
     class Meta:
@@ -35,6 +34,9 @@ class LabelRegisterSerializer(serializers.ModelSerializer):
         ]
 
 class ExpenseRegisterSerializer(serializers.ModelSerializer):
+    expenseDescription = serializers.CharField(source='expense_description'); 
+    expenseDate = serializers.DateField(source='expense_date', required=False);
+    expenseAmount = serializers.DecimalField(source='expense_amount', max_digits=10, decimal_places=2); 
     class Meta: 
         model = Expense
         fields = [
@@ -42,14 +44,14 @@ class ExpenseRegisterSerializer(serializers.ModelSerializer):
             'user',
             'account',
             'label',
-            'expense_description',
-            'expense_date', 
-            'expense_amount', 
+            'expenseDescription',
+            'expenseDate', 
+            'expenseAmount', 
 
         ]
         extra_kwargs = {
-            'expense_description': {'required': False},
-            'expense_date': {'required': False},
+            'expenseDescription': {'required': False},
+            'expenseDate': {'required': False},
         }
 
 
@@ -85,6 +87,9 @@ class ExpenseListSerializer(serializers.ModelSerializer):
     user = UserSignUpSerializer(read_only=True) 
     account = AccountRegisterSerializer(read_only=True) 
     label = LabelRegisterSerializer(read_only=True)
+    expenseDescription = serializers.CharField(source='expense_description'); 
+    expenseDate = serializers.DateField(source='expense_date', required=False);
+    expenseAmount = serializers.DecimalField(source='expense_amount', max_digits=10, decimal_places=2); 
 
     class Meta: 
         model = Expense
@@ -93,13 +98,16 @@ class ExpenseListSerializer(serializers.ModelSerializer):
             'user',
             'account',
             'label',
-            'expense_description',
-            'expense_date', 
-            'expense_amount', 
+            'expenseDescription',
+            'expenseDate', 
+            'expenseAmount', 
         ]
         
 
 class ExpenseUpdateSerializer(serializers.ModelSerializer): 
+    expenseDescription = serializers.CharField(source='expense_description'); 
+    expenseDate = serializers.DateField(source='expense_date', required=False);
+    expenseAmount = serializers.DecimalField(source='expense_amount', max_digits=10, decimal_places=2); 
     class Meta: 
         model = Expense
         fields = [
@@ -107,8 +115,8 @@ class ExpenseUpdateSerializer(serializers.ModelSerializer):
             'user',
             'account',
             'label',
-            'expense_description',
-            'expense_date', 
-            'expense_amount',
+            'expenseDescription',
+            'expenseDate', 
+            'expenseAmount',
         ]
         read_only_fields = ['account', 'label',]
